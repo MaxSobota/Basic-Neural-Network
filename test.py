@@ -1,19 +1,20 @@
 from neuralnetwork import NeuralNetwork
 from dataloader import load_data
-from activations import relu, softmax
-import numpy as np
+from functions import ReLU, Softmax, CE_Loss
 
 if __name__ == "__main__":
-    images, labels = load_data()
+    train_images, train_labels = load_data("mnist_train.csv")
+    test_images, test_labels = load_data("mnist_test.csv")
+
+    print("Data loaded.")
     
     # Example setup
-    layers = [784, 256, 64, 10]
-    activations = [relu, relu, softmax]
+    layers = [784, 256, 10]
+    activations = [ReLU, Softmax]
+    learning_rate = 1e-3
     
-    network = NeuralNetwork(len(layers), layers, activations)
+    network = NeuralNetwork(len(layers), layers, activations, learning_rate)
 
-    probabilities = network.forward_pass(images[5])
+    network.train(train_images, train_labels, CE_Loss)
 
-    most_likely = np.argmax(probabilities)
-
-    print(f"Prediction probabilities: {probabilities} Actual value: {labels[5]} Prediction: {most_likely}")
+    network.test(test_images, test_labels, CE_Loss)
