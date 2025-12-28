@@ -19,6 +19,7 @@ def load_data(filename):
 
             image_values.append(values[1:]) 
 
-    images = [np.array(img).reshape(28, 28) for img in image_values]
+    # Normalize to between 0 and 1
+    images = [(np.array(img).reshape(28, 28) / 255) for img in image_values]
 
     return images, labels

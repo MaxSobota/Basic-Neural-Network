@@ -1,6 +1,6 @@
 from neuralnetwork import NeuralNetwork
 from dataloader import load_data
-from functions import ReLU, Softmax, CE_Loss
+from functions import ReLU, Softplus, Softmax, CE_Loss
 
 if __name__ == "__main__":
     train_images, train_labels = load_data("mnist_train.csv")
@@ -10,7 +10,7 @@ if __name__ == "__main__":
     
     # Example setup
     layers = [784, 256, 10]
-    activations = [ReLU, Softmax]
+    activations = [Softplus, Softmax]
     learning_rate = 1e-3
     
     network = NeuralNetwork(len(layers), layers, activations, learning_rate)
