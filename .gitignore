@@ -208,3 +208,5 @@ __marimo__/
 
 # Might change later
 *.csv
+
+*.pkl

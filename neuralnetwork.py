@@ -102,7 +102,7 @@ class NeuralNetwork:
             self.layers[i] -= self.learning_rate * weight_gradients[i]
             self.biases[i] -= self.learning_rate * bias_gradients[i]
 
-    # Learn by doing forward/backward pass on dataset
+    # Learn by doing forward/backward pass on dataset and updating weights/biases
     def train(self, inputs, labels, loss):
         print("Beginning training...")
 
@@ -122,7 +122,7 @@ class NeuralNetwork:
             self.update_parameters(weight_gradients, bias_gradients)
 
         print(f"Average loss across {len(labels)} images: {np.mean(losses)}")
-        print(f"Total correct: {correct} / {len(labels)}")
+        print(f"Total correct: {correct} / {len(labels)} = {round((correct / len(labels)) * 100, 2)}%")
 
     # Compare predictions to true labels without learning
     def test(self, inputs, labels, loss):
@@ -139,4 +139,20 @@ class NeuralNetwork:
                 correct += 1
 
         print(f"Average loss across {len(labels)} images: {np.mean(losses)}")
-        print(f"Total correct: {correct} / {len(labels)}")
+        print(f"Total correct: {correct} / {len(labels)} = {round((correct / len(labels)) * 100, 2)}%")
+
+    # Using the trained network, make a prediction for one data point
+    def test_single(self, input, label):
+        print(f"Testing input...")
+
+        prediction = self.forward_pass(input)
+
+        prediction_index = np.argmax(prediction)
+        true_label = np.argmax(label)
+
+        if prediction_index == true_label:
+            print("Prediction correct!")
+        else:
+            print("Prediction incorrect.")
+
+        print(f"Prediction: {prediction_index} True label: {true_label}")
