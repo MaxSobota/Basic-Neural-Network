@@ -5,6 +5,8 @@ from datetime import datetime
 
 # Loads CSV data into one-hot labels and 28x28 numpy arrays
 def load_data(filename):
+    print(f"Loading data from {filename}...")
+    
     with open(filename, newline="") as file:
         reader = csv.reader(file)
         
@@ -15,14 +17,15 @@ def load_data(filename):
             values = [int(x) for x in row]
 
             # Creating one-hot vector for each label
-            label = np.zeros((10, ))
+            label = np.zeros((10, ), dtype=np.int64)
             label[values[0]] = 1
             labels.append(label)
 
             image_values.append(values[1:]) 
 
-    # Normalize to between 0 and 1
-    images = [(np.array(img).reshape(28, 28) / 255) for img in image_values]
+    images = [np.array(img, dtype=np.float64).reshape(28, 28) for img in image_values]
+
+    print("Data loaded.")
 
     return images, labels
 
@@ -47,3 +50,16 @@ def load_network():
     except Exception as e:
         print(e)
         return None
+    
+# Helper class to load data into GUI
+class Dataset:
+    def __init__(self, images, labels):
+        self.images = images
+        self.labels = labels
+
+    # Len of labels == len of images
+    def __len__(self):
+        return len(self.images)
+
+    def get(self, index):
+        return self.images[index], self.labels[index]

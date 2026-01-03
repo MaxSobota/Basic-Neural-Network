@@ -106,6 +106,9 @@ class NeuralNetwork:
     def train(self, inputs, labels, loss):
         print("Beginning training...")
 
+        # Normalize to between 0 and 1
+        inputs = [(img / 255) for img in inputs]
+
         losses = np.zeros((len(labels), ))
         correct = 0
 
@@ -128,6 +131,9 @@ class NeuralNetwork:
     def test(self, inputs, labels, loss):
         print("Beginning testing...")
 
+        # Normalize to between 0 and 1
+        inputs = [(img / 255) for img in inputs]
+
         losses = np.zeros((len(labels), ))
         correct = 0
 
@@ -144,6 +150,9 @@ class NeuralNetwork:
     # Using the trained network, make a prediction for one data point
     def test_single(self, input, label):
         print(f"Testing input...")
+
+        # Normalize to between 0 and 1
+        input /= 255
 
         prediction = self.forward_pass(input)
 
