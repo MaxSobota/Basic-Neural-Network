@@ -40,12 +40,12 @@ def save_network(network):
     except Exception as e:
         print(e)
 
-def load_network():
-    filename = input("Enter filepath (without .pkl extension): ")
-
+# Check that the .pkl file is a NeuralNetwork object
+def load_network(filename):
     try:
-        with open(f"{filename}.pkl", "rb") as file:
+        with open(filename, "rb") as file:
             network = pickle.load(file)
+
         return network
     except Exception as e:
         print(e)
