@@ -5,6 +5,7 @@ import numpy as np
 
 from dataloader import save_network, load_network
 from neuralnetwork import NeuralNetwork
+from functions import CE_Loss
 
 """
 Ideas:
@@ -23,7 +24,6 @@ class AppState:
         self.train_dataset = train_dataset
         self.test_dataset = test_dataset
         self.model = None
-        self.training = False
 
 # Widget which shows the neural network structure and firing
 class NetworkVisualizer(QWidget):
@@ -150,8 +150,7 @@ class TrainWidget(QWidget):
         super().__init__()
 
         self.state = state
-        self.layers = []
-        self.activations = []
+        self.layer_widgets = [] # [(neurons, activation)]
         self.learning_rate = 0
 
         self.main_layout = QVBoxLayout(self)
@@ -162,6 +161,9 @@ class TrainWidget(QWidget):
 
         self.main_layout.addLayout(self.layers_layout)
 
+        self.add_layer(is_input=True) # Input layer
+        self.add_layer(is_output=True) # Output layer
+
         buttons_layout = QHBoxLayout()
         self.add_button = QPushButton("Add Layer")
         self.remove_button = QPushButton("Remove Layer")
@@ -170,67 +172,76 @@ class TrainWidget(QWidget):
         buttons_layout.addWidget(self.remove_button)
         self.main_layout.addLayout(buttons_layout)
 
+        self.lr_enter = QTextEdit()
+        self.lr_enter.setText("1e-3") # default
+        self.main_layout.addWidget(self.lr_enter)
+
         self.add_button.clicked.connect(self.add_layer)
         self.remove_button.clicked.connect(self.remove_last_layer)
 
-        self.lr_enter = QTextEdit()
-        self.lr_enter.setText("1e-3") # default
-
-        self.start_button = QPushButton("Start")
+        self.build_button = QPushButton("Build Network")
+        self.start_button = QPushButton("Start Training")
         self.back_button = QPushButton("Back to Menu")
 
+        self.main_layout.addWidget(self.build_button)
         self.main_layout.addWidget(self.start_button)
         self.main_layout.addWidget(self.back_button)
-        self.main_layout.addWidget(self.lr_enter)
 
-        self.start_button.clicked.connect(self.build_network)
+        self.build_button.clicked.connect(self.build_network)
+        self.start_button.clicked.connect(self.call_train)
         self.back_button.clicked.connect(lambda: stack.setCurrentIndex(0))
 
-    def add_layer(self, is_input=False):
-        if len(self.layers) == 10:
+    def add_layer(self, is_input=False, is_output=False):
+        if len(self.layer_widgets) >= 10:
             QMessageBox.warning(self, "Warning", "Maximum is 10 fully connected layers.")
             return
         
         sub_layout = QVBoxLayout()
-
         spinbox = QSpinBox()
         spinbox.setMinimum(1)
         spinbox.setMaximum(1_000) # Arbitrary, but this much is laggy anyway
-        spinbox.setValue(1)
 
-        activation = QComboBox()
-        activation.addItems(["ReLU", "Softplus", "Softmax", "CE_Loss"])
-
-        self.layers.append(spinbox)
-        self.activations.append(activation)
+        if is_input: # Fixed input layer for MNIST
+            position = 0
+            spinbox.setValue(784)
+            spinbox.setEnabled(False)
+            activation = QLabel("Input Layer")
+        elif is_output: # Output layer
+            position = -1
+            spinbox.setValue(10) # Fixed output layer for MNIST
+            spinbox.setEnabled(False)
+            activation = QLabel("Softmax")
+        else:
+            position = len(self.layer_widgets) - 1
+            spinbox.setValue(10)
+            activation = QComboBox()
+            activation.addItems(["ReLU", "Softplus"])
 
         sub_layout.addWidget(spinbox)
         sub_layout.addWidget(activation)
-
-        self.layers_layout.addLayout(sub_layout)
+        
+        self.layer_widgets.insert(position, (spinbox, activation))
+        self.layers_layout.insertLayout(position, sub_layout)
 
     def remove_last_layer(self):
-        count = self.layers_layout.count()
-        if count == 0: # No layers added
+        if len(self.layers_layout) <= 2:
+            QMessageBox.warning(self, "Warning", "Cannot remove input layer or output layer.")
             return
 
-        # Remove last layout item (layer)
-        item = self.layers_layout.takeAt(count - 1)
+        remove_index = len(self.layer_widgets) - 2
+        item = self.layers_layout.takeAt(remove_index)
         layout = item.layout()
 
-        if layout != None: # Delete widgets inside the sublayout
+        if layout: # Remove widgets from layout first, then delete layout
             while layout.count():
                 child = layout.takeAt(0)
                 widget = child.widget()
-                if widget != None:
+                if widget:
                     widget.deleteLater()
-
-            # Delete sublayout
             layout.deleteLater()
 
-        # Remove from other lists
-        self.layers.pop()
-        self.activations.pop()
+        # Remove widgets from their list
+        self.layer_widgets.pop(remove_index)
 
     def get_values(self): # List format for NeuralNetwork class
         try:
@@ -239,28 +250,41 @@ class TrainWidget(QWidget):
             QMessageBox.critical(self, "Invalid number", "Not a valid learning rate. Please enter a learning rate in the form '1e-3', within the range 1e-7 to 1.")
             return None, None, None
         
-        layers = [spinbox.value() for spinbox in self.layers]
-        activations = [item.currentText() for item in self.activations]
+        layers = []
+        activations = []
+
+        for spinbox, activation in self.layer_widgets:
+            layers.append(spinbox.value())
+            if activation != None:
+                activations.append(activation.currentText())
         
         return layers, activations, learning_rate
     
     def build_network(self): # Builds a NeuralNetwork object from the setup made by the user
-        self.layers, self.activations, self.learning_rate = self.get_values()
+        layers, activations, learning_rate = self.get_values()
 
         # Error messages
-        if self.layers == []:
+        if layers == []:
             QMessageBox.critical(self, "Error", "Error creating model: Layers empty")
             return
 
-        if self.activations == []:
+        if activations == []:
             QMessageBox.critical(self, "Error", "Error creating model: Activations empty")
             return
         
-        if self.learning_rate == None:
+        if learning_rate == None:
             QMessageBox.critical(self, "Error", "Error creating model: Learning rate incorrect")
             return
 
-        return NeuralNetwork(len(self.layers), self.layers, self.activations, self.learning_rate)
+        self.state.model = NeuralNetwork(len(layers), layers, activations, learning_rate)
+        QMessageBox.information(self, "Success", "Network created, ready to train.")
+
+    # Calls the training function on the neural network using the given dataset
+    def call_train(self):
+        inputs = self.state.train_dataset.images
+        labels = self.state.train_dataset.labels
+        self.state.model.train(inputs, labels, CE_Loss)
+        save_network(self.state.model)
 
 # Network testing widget
 class TestWidget(QWidget):

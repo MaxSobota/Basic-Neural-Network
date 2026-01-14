@@ -1,17 +1,5 @@
-from neuralnetwork import NeuralNetwork
 from dataloader import load_data, Dataset
-from functions import ReLU, Softplus, Softmax, CE_Loss
 from visualizer import start
-
-def example_setup():
-    # Example setup
-    layers = [784, 256, 10]
-    activations = [Softplus, Softmax]
-    learning_rate = 1e-3
-    
-    network = NeuralNetwork(len(layers), layers, activations, learning_rate)
-
-    return network
 
 if __name__ == "__main__":
     train_images, train_labels = load_data("mnist_train.csv")
@@ -30,3 +18,12 @@ if __name__ == "__main__":
 # TODO: Figure out how to make visualizer look better
 # TODO: Add training/testing/saving models
 # TODO: Add drawing features
+# TODO: Optimize dataloader and network speed
+# TODO: Add more activation functions (and derivatives)
+
+# Currently working on:
+# Need to fix neuralnetwork.py train/test functions to:
+# - Remove print statements
+# - Return more information
+# - Work with graphs
+# - Work with progress bar
